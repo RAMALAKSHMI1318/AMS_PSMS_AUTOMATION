@@ -1,0 +1,6 @@
+playwright
+pytest
+pytest-html
+allure-pytest
+pandas
+openpyxl
