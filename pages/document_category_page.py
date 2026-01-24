@@ -139,7 +139,7 @@ class DocumentCategoryPage(BasePage):
     # ==================================================
     def click_delete_by_search(self, search_text: str):
         """
-        Search a document category and delete the matching row
+        Search a document category and delete the matching rowa
         """
         # 1️⃣ Search first
         self.search_document_category(search_text)

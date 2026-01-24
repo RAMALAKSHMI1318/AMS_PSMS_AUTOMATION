@@ -9,7 +9,6 @@ class AllureHelper:
 
     @staticmethod
     def _load_test_data():
-        
         if AllureHelper._test_data_df is None:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             xlsx_path = os.path.join(base_dir, "data", "testdata.xlsx")
@@ -19,13 +18,12 @@ class AllureHelper:
 
             AllureHelper._test_data_df = pd.read_excel(xlsx_path)
 
-        # Clean column names
+            # Clean column names
             AllureHelper._test_data_df.columns = (
                 AllureHelper._test_data_df.columns.str.strip()
-        )
+            )
 
         return AllureHelper._test_data_df
-
 
     @staticmethod
     def get_test_row(tcid: str) -> dict:
@@ -35,10 +33,23 @@ class AllureHelper:
             raise ValueError(f"No test data found for TC ID: {tcid}")
         return rows[0]
 
+    # =====================================================
+    # ✅ ADD THIS METHOD (DO NOT CHANGE TEST CODE)
+    # =====================================================
+    @staticmethod
+    def attach_description(tcid: str):
+        """
+        Compatibility method for existing tests.
+        """
+        AllureHelper.attach_common_description(tcid)
+
+    # =====================================================
+
     @staticmethod
     def attach_common_description(tcid: str):
         row = AllureHelper.get_test_row(tcid)
 
+        allure.dynamic.title(tcid)
         allure.dynamic.description_html(f"""
         <b>TC ID:</b> {tcid}<br>
         <b>Screen:</b> {row.get("Screen", "")}<br>
