@@ -34,8 +34,8 @@ def test_prd_01_add_product(page: Page):
     password = data_map["password"]
 
     product_name = data_map["product_name"]
-    category = data_map["category"]
-    status = data_map["status"]
+    category_index = int(data_map["category_index"])
+    status_index = int(data_map["status_index"])
     description = data_map["description"]
 
     # ✅ DYNAMIC PRODUCT CODE (NEW)
@@ -53,13 +53,16 @@ def test_prd_01_add_product(page: Page):
 
         product_page.open_product_screen()
 
-        product_page.enter_product_details(
+        product_page.enter_product_details (
             code=product_code,
             name=product_name,
-            category=category,
-            status=status,
+            
             description=description
         )
+        
+        product_page.select_category_by_index(category_index)
+        product_page.select_status_by_index(status_index)
+
 
         product_page.save()
 
