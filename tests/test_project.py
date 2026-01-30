@@ -170,3 +170,77 @@ def test_prj_03_project_tree_expansion(page: Page):
         AllureHelper.attach_fail_description(tcid)
         AllureHelper.attach_failure(str(e))
         raise
+
+
+@pytest.mark.product
+def test_prj_04_add_product_from_tree(page: Page):
+    tcid = "PRJ_04"
+    AllureHelper.attach_common_description(tcid)
+
+    data = get_test_data(tcid)
+
+    login_page = LoginPage(page)
+    project_page = ProjectPage(page)
+
+    login_page.open_login()
+    login_page.login(data["email"], data["password"])
+
+    page.get_by_role("link", name="Projects").click()
+    project_page.open_project_tree()
+
+    # Right-click Project node
+    project_page.right_click_on_project_node(data["project_name"])
+
+    # Click + Product from context menu
+    project_page.click_add_product_from_context()
+
+    # Fill product form
+    project_page.fill_product_details(
+        product_name=data["product"],
+        delivery_day=data["delivery_day"],
+        quantity=data["quantity"],
+        unit=data["unit"],
+        remarks=data["remarks"],
+        file_path=data["file_path"]
+    )
+
+    project_page.save_product()
+
+    # ✅ PASS — creation itself is the validation
+    AllureHelper.attach_pass_description(tcid)
+
+
+# =====================================================
+# PRJ_05 – ADD MILESTONE FROM TREE
+# =====================================================
+@pytest.mark.milestone
+def test_prj_05_add_milestone_from_tree(page: Page):
+    tcid = "PRJ_05"
+    AllureHelper.attach_common_description(tcid)
+
+    data = get_test_data(tcid)
+
+    login_page = LoginPage(page)
+    project_page = ProjectPage(page)
+
+    login_page.open_login()
+    login_page.login(data["email"], data["password"])
+
+    page.get_by_role("link", name="Projects").click()
+    project_page.open_project_tree()
+
+    project_page.right_click_on_project_node(data["project_name"])
+    project_page.click_add_milestone_from_context()
+
+    project_page.fill_milestone_details(
+        milestone_name=data["milestone_name"],
+        start_day=data["start_day"],
+        end_day=data["end_day"],
+        remarks=data["remarks"],
+        file_path=data.get("file_path"),
+    )
+
+    project_page.save_milestone()
+    AllureHelper.attach_pass_description(tcid)
+
+

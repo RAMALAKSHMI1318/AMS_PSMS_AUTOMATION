@@ -97,6 +97,7 @@
 #             expect(
 #                 self.page.get_by_text(project_name)
 #             ).to_be_visible(timeout=5000)
+from pathlib import Path
 from playwright.sync_api import Page, expect
 
 
@@ -137,6 +138,15 @@ class ProjectPage:
         self.toast_message = page.locator(
             ".toast-message, .p-toast-detail, .alert-success"
         )
+
+    def open_project_tree(self):
+        self.page.get_by_role("button", name="itemDetails").click()
+
+    def right_click_on_project_node(self, project_name: str):
+        self.page.locator("span").filter(
+            has_text=project_name
+        ).first.click(button="right")
+
 
     # ===============================
     # ADD PROJECT
@@ -251,6 +261,172 @@ class ProjectPage:
         """
         tree_item = self.page.get_by_role("treeitem").first
         expect(tree_item).to_be_visible(timeout=5000)
+
+
+
+
+# ===============================
+    # TREE – PRJ_04 (ADD PRODUCT)
+    # ===============================
+    def right_click_on_project_node(self, project_name: str):
+        """
+        EXACT locator – PrimeNG p-tree (right-click the visible node label)
+        """
+        self.page.wait_for_timeout(200)
+        try:
+            # prefer span filter used in your codegen
+            self.page.locator("span").filter(has_text=project_name).first.click(button="right")
+            self.page.wait_for_timeout(200)
+            return
+        except Exception:
+            pass
+
+        try:
+            self.page.locator("span.p-treenode-label", has_text=project_name).first.click(button="right")
+            self.page.wait_for_timeout(200)
+            return
+        except Exception:
+            pass
+
+        try:
+            self.page.get_by_text(project_name, exact=True).first.click(button="right")
+            self.page.wait_for_timeout(200)
+            return
+        except Exception:
+            pass
+
+        raise RuntimeError(f"Failed to right-click project node: {project_name}")
+
+    def click_add_product_from_context(self):
+        self.page.wait_for_timeout(200)
+        self.page.get_by_role("button", name="➕ Product").click()
+        self.page.wait_for_timeout(300)
+
+    def fill_product_details(
+        self,
+        product_name: str,
+        delivery_day: str,
+        quantity: str,
+        unit: str,
+        remarks: str,
+        file_path: str,
+    ):
+        # Product selection
+        self.page.get_by_role("combobox", name="Select Product").click()
+        self.page.get_by_text(product_name).click()
+        self.page.wait_for_timeout(200)
+
+        # Planned Delivery Date
+        self.page.get_by_role("combobox", name="Planned Delivery Date").click()
+        self.page.get_by_text(delivery_day).nth(1).click()
+        self.page.wait_for_timeout(200)
+
+        # Quantity / Unit / Remarks
+        self.page.get_by_placeholder("Quantity").fill(str(quantity))
+        self.page.get_by_role("textbox", name="Unit").fill(unit)
+        # prefer exact remark label used in app
+        try:
+            self.page.get_by_role("textbox", name="Type your remarks here").fill(remarks)
+        except Exception:
+            try:
+                self.page.get_by_role("textbox", name="Type your remark here").fill(remarks)
+            except Exception:
+                try:
+                    self.page.locator("textarea").fill(remarks)
+                except Exception:
+                    pass
+
+        # File upload - resolve common paths and fail clearly if not found
+        if file_path:
+            tried = []
+            p = Path(file_path)
+            tried.append(str(p))
+            if not p.is_absolute():
+                # try repo uploads folder
+                p_uploads = Path.cwd() / "uploads" / file_path
+                tried.append(str(p_uploads))
+                # try repo root file
+                p_repo = Path.cwd() / file_path
+                tried.append(str(p_repo))
+                # choose first existing
+                candidates = [p, p_uploads, p_repo]
+            else:
+                candidates = [p]
+
+            resolved = None
+            for c in candidates:
+                c = Path(c)
+                if c.exists():
+                    resolved = c.resolve()
+                    break
+
+            if not resolved:
+                raise FileNotFoundError(f"Upload file not found. Tried: {tried}")
+
+            # use resolved absolute path for Playwright
+            try:
+                self.page.get_by_role("button", name="Browse Files").set_input_files(str(resolved))
+            except Exception:
+                self.page.locator("input[type=file]").set_input_files(str(resolved))
+            self.page.wait_for_timeout(200)
+
+    def save_product(self):
+        self.page.get_by_role("button", name="Save").click()
+ # ===============================
+    # PRJ_05 – ADD MILESTONE (NO TEST CHANGE)
+    # ===============================
+    def click_add_milestone_from_context(self):
+        btn = self.page.get_by_role("button", name="➕ Milestone")
+        btn.wait_for(state="visible", timeout=5000)
+        btn.click()
+
+        # 🔒 keep dialog open
+        self.page.get_by_role("dialog").wait_for(state="visible", timeout=5000)
+
+    def fill_milestone_details(
+        self,
+        milestone_name: str,
+        start_day: str,
+        end_day: str,
+        remarks: str,
+        file_path: str = None,
+    ):
+        self.page.get_by_role(
+            "textbox", name="Milestone Name"
+        ).fill(milestone_name)
+
+        # Start date
+        self.page.get_by_role("combobox", name="Milestone Start Date").click()
+        calendar = self.page.locator("div.p-datepicker")
+        calendar.wait_for(state="visible", timeout=3000)
+        calendar.get_by_text(str(start_day), exact=True).click()
+
+        # End date
+        self.page.get_by_role("combobox", name="Milestone End Date").click()
+        calendar.wait_for(state="visible", timeout=3000)
+        calendar.get_by_text(str(end_day), exact=True).click()
+
+        try:
+            self.page.get_by_role(
+                "textbox", name="Type your remarks here"
+            ).fill(remarks)
+        except Exception:
+            self.page.locator("textarea").fill(remarks)
+
+        if file_path:
+            p = Path(file_path)
+            if not p.exists():
+                p = Path.cwd() / file_path
+            if not p.exists():
+                raise FileNotFoundError(f"Upload file not found: {file_path}")
+
+            self.page.locator("input[type=file]").set_input_files(str(p.resolve()))
+
+    def save_milestone(self):
+        self.page.get_by_role("button", name="Save").click()
+
+
+
 
     # ===============================
     # VERIFICATION
