@@ -1,102 +1,3 @@
-# from playwright.sync_api import Page, expect
-
-
-# class ProjectPage:
-#     def __init__(self, page: Page):
-#         self.page = page
-
-#         # ===============================
-#         # Navigation
-#         # ===============================
-#         self.link_projects = page.get_by_role("link", name="Projects")
-#         self.btn_add_project = page.get_by_role(
-#     "button", name="Project", exact=True
-# )
-
-
-#         # ===============================
-#         # Add Project Form Fields
-#         # ===============================
-#         self.input_po_no = page.get_by_role("textbox", name="PO No.")
-#         self.input_project_name = page.get_by_role("textbox", name="Project Name")
-#         self.input_customer_name = page.get_by_role("textbox", name="Customer Name")
-
-#         # Dropdown (based on your codegen)
-#         self.select_customer = page.locator("select")
-
-#         self.input_description = page.get_by_role("textbox", name="Description")
-#         self.input_qty = page.get_by_placeholder("Qty")
-#         self.input_remark = page.get_by_role(
-#             "textbox", name="Type your remark here"
-#         )
-
-#         self.pdc_date_picker = page.get_by_role("combobox", name="PDC Date")
-
-#         self.btn_save = page.get_by_role("button", name="Save")
-
-#         # ===============================
-#         # Common / Validation
-#         # ===============================
-#         self.toast_message = page.locator(
-#             ".toast-message, .p-toast-detail, .alert-success"
-#         )
-
-#     # ===============================
-#     # Actions
-#     # ===============================
-
-#     def open_projects_tab(self):
-#         """Open Projects module"""
-#         self.link_projects.click()
-
-#     def open_add_project(self):
-#         """Open New Project form"""
-#         self.open_projects_tab()
-#         self.btn_add_project.click()
-
-#     def fill_project_details(
-#         self,
-#         po_no: str,
-#         project_name: str,
-#         customer: str,
-#         description: str,
-#         qty: str,
-#         remark: str,
-#     ):
-#         """Fill Project creation form"""
-#         self.input_po_no.fill(po_no)
-#         self.input_project_name.fill(project_name)
-#         self.input_customer_name.fill(customer)
-
-#         # Static select option as per your current app behavior
-#         self.select_customer.select_option("172")
-
-#         self.input_description.fill(description)
-#         self.input_qty.fill(qty)
-#         self.input_remark.fill(remark)
-
-#     def select_pdc_date(self, day: str = "26"):
-#         """Select PDC date"""
-#         self.pdc_date_picker.click()
-#         self.page.get_by_text(day, exact=True).click()
-
-#     def save_project(self):
-#         """Save Project"""
-#         self.btn_save.click()
-
-#     # ===============================
-#     # Verifications
-#     # ===============================
-
-#     def verify_project_created(self, project_name: str):
-#         """Verify project creation"""
-#         try:
-#             expect(self.toast_message).to_be_visible(timeout=5000)
-#         except Exception:
-#             # Fallback verification in grid/list
-#             expect(
-#                 self.page.get_by_text(project_name)
-#             ).to_be_visible(timeout=5000)
 from pathlib import Path
 from playwright.sync_api import Page, expect
 
@@ -139,47 +40,52 @@ class ProjectPage:
             ".toast-message, .p-toast-detail, .alert-success"
         )
 
+    # ===============================
+    # COMMON TREE
+    # ===============================
     def open_project_tree(self):
         self.page.get_by_role("button", name="itemDetails").click()
-
-    def right_click_on_project_node(self, project_name: str):
-        self.page.locator("span").filter(
-            has_text=project_name
-        ).first.click(button="right")
-
+        self.page.get_by_role("tree").wait_for(state="visible", timeout=10000)
 
     # ===============================
-    # ADD PROJECT
+    # ADD PROJECT – PRJ_01
     # ===============================
     def open_add_project(self):
         self.link_projects.click()
         self.btn_add_project.click()
 
     def fill_basic_details(self, po_no, project_name, customer_name):
-        self.input_po_no.fill(po_no)
+        self.input_po_no.fill(str(po_no))
         self.input_project_name.fill(project_name)
         self.input_customer_name.fill(customer_name)
 
     def select_pdc_date(self, day):
         self.pdc_date_picker.click()
-        self.page.get_by_text(day, exact=True).click()
+        self.page.get_by_text(str(day), exact=True).click()
 
     def select_responsible_engineer(self, engineer_name):
         self.select_engineer.click()
         self.page.get_by_role("option", name=engineer_name).click()
 
     def add_first_product(self, product_id, description, qty):
-        self.select_product.select_option(product_id)
-        self.input_description.fill(description)
-        self.input_qty.fill(qty)
+      product_id = str(product_id)
+
+    # ✅ Wait for select itself (not option)
+      expect(self.select_product).to_be_enabled(timeout=10000)
+
+    # ✅ Select by value (native dropdown)
+      self.select_product.select_option(product_id)
+
+      self.input_description.fill(description)
+      self.input_qty.fill(str(qty))
+
 
     def add_second_product(self, product_id, product_name, description, qty):
         self.btn_add_product.click()
-        self.page.get_by_role("treeitem", name="Select Product")
 
         self.page.get_by_role(
             "row", name="Select Product"
-        ).get_by_role("combobox").select_option(product_id)
+        ).get_by_role("combobox").select_option(str(product_id))
 
         self.page.get_by_role(
             "row", name=product_name
@@ -187,18 +93,45 @@ class ProjectPage:
 
         self.page.get_by_role(
             "row", name=f"{product_name} {description}"
-        ).get_by_placeholder("Qty").fill(qty)
+        ).get_by_placeholder("Qty").fill(str(qty))
 
     def add_remark(self, remark):
         self.input_remark.fill(remark)
 
     def save_project(self):
-        self.btn_save.scroll_into_view_if_needed()
-        expect(self.btn_save).to_be_enabled()
-        self.btn_save.click()
+      self.btn_save.scroll_into_view_if_needed()
+      expect(self.btn_save).to_be_enabled()
+      self.btn_save.click()
+
+    # ✅ wait for backend save / UI settle
+      self.page.wait_for_timeout(2000)
+    def verify_project_row(
+    self,
+    project_name: str,
+    po_no: str,
+    customer_name: str,
+    status: str = "PROCESSING",
+):
+    # Go to Project List
+         self.page.get_by_role("link", name="Projects").click()
+
+    # Wait for table
+         self.page.wait_for_selector("table", timeout=15000)
+
+    # ✅ Locate row by project name text
+         row = self.page.locator("tr", has_text=project_name)
+
+         expect(row).to_be_visible(timeout=15000)
+
+    # ✅ Column validations (exactly like UI)
+         expect(row.get_by_text(project_name, exact=True)).to_be_visible()
+         expect(row.get_by_text(po_no, exact=True)).to_be_visible()
+         expect(row.get_by_text(customer_name, exact=True)).to_be_visible()
+         expect(row.get_by_text(status, exact=True)).to_be_visible()
+
 
     # ===============================
-    # EDIT PROJECT
+    # EDIT PROJECT – PRJ_02
     # ===============================
     def open_edit_project(self):
         self.page.get_by_role("button", name="edit_project").click()
@@ -208,11 +141,9 @@ class ProjectPage:
         self.page.get_by_text(day).nth(1).click()
 
     def update_customer_name(self, customer_name):
-        self.input_customer_name.click()
         self.input_customer_name.fill(customer_name)
 
     def update_remark(self, remark):
-        self.input_remark.click()
         self.input_remark.fill(remark)
 
     def update_project(self):
@@ -221,86 +152,32 @@ class ProjectPage:
         self.btn_update.click()
 
     # ===============================
-    # TREE – PRJ_03 (EXACT LOCATORS)
+    # TREE – PRJ_03
     # ===============================
-    def open_project_tree(self):
-        self.page.get_by_role("button", name="itemDetails").click()
-
     def expand_tree_using_exact_locators(self, nodes: list[str]):
-        """
-        Expand tree by navigating through nodes.
-        For each node:
-        1. Try to click the expand button (if it exists)
-        2. Click the label to select/navigate the node
-        """
         for node in nodes:
-            # Try to click expand button if it exists
+            tree_item = self.page.get_by_role("treeitem", name=node)
+
             try:
-                expand_button = self.page.get_by_role("treeitem", name=node).get_by_role("button")
-                if expand_button.count() > 0:
-                    expand_button.click(timeout=3000)
-                    self.page.wait_for_timeout(300)
+                tree_item.get_by_role("button").click(timeout=3000)
             except:
-                # No button or timeout - this is likely a leaf node, continue
                 pass
-            
-            # Click the label/text to navigate or select the node
-            # Handle both partial and full text matches
+
             try:
-                self.page.get_by_label(node).get_by_text(node).click()
+                tree_item.locator("span.p-treenode-label").click()
             except:
-                # If get_by_label fails, try direct text click
-                self.page.get_by_text(node, exact=True).click()
-            
-            self.page.wait_for_timeout(300)
+                pass
 
-    def verify_tree_expanded(self):
-        """
-        Verify that the tree has been expanded.
-        Simply checks that at least one tree item is visible.
-        """
-        tree_item = self.page.get_by_role("treeitem").first
-        expect(tree_item).to_be_visible(timeout=5000)
-
-
-
-
-# ===============================
+    # ===============================
     # TREE – PRJ_04 (ADD PRODUCT)
     # ===============================
     def right_click_on_project_node(self, project_name: str):
-        """
-        EXACT locator – PrimeNG p-tree (right-click the visible node label)
-        """
-        self.page.wait_for_timeout(200)
-        try:
-            # prefer span filter used in your codegen
-            self.page.locator("span").filter(has_text=project_name).first.click(button="right")
-            self.page.wait_for_timeout(200)
-            return
-        except Exception:
-            pass
-
-        try:
-            self.page.locator("span.p-treenode-label", has_text=project_name).first.click(button="right")
-            self.page.wait_for_timeout(200)
-            return
-        except Exception:
-            pass
-
-        try:
-            self.page.get_by_text(project_name, exact=True).first.click(button="right")
-            self.page.wait_for_timeout(200)
-            return
-        except Exception:
-            pass
-
-        raise RuntimeError(f"Failed to right-click project node: {project_name}")
+        self.page.locator(
+            "span.p-treenode-label", has_text=project_name
+        ).first.click(button="right")
 
     def click_add_product_from_context(self):
-        self.page.wait_for_timeout(200)
         self.page.get_by_role("button", name="➕ Product").click()
-        self.page.wait_for_timeout(300)
 
     def fill_product_details(
         self,
@@ -311,135 +188,328 @@ class ProjectPage:
         remarks: str,
         file_path: str,
     ):
-        # Product selection
         self.page.get_by_role("combobox", name="Select Product").click()
         self.page.get_by_text(product_name).click()
-        self.page.wait_for_timeout(200)
 
-        # Planned Delivery Date
-        self.page.get_by_role("combobox", name="Planned Delivery Date").click()
+        self.page.get_by_role(
+            "combobox", name="Planned Delivery Date"
+        ).click()
         self.page.get_by_text(delivery_day).nth(1).click()
-        self.page.wait_for_timeout(200)
 
-        # Quantity / Unit / Remarks
-        self.page.get_by_placeholder("Quantity").fill(str(quantity))
+        self.page.get_by_placeholder("Quantity").fill(quantity)
         self.page.get_by_role("textbox", name="Unit").fill(unit)
-        # prefer exact remark label used in app
-        try:
-            self.page.get_by_role("textbox", name="Type your remarks here").fill(remarks)
-        except Exception:
-            try:
-                self.page.get_by_role("textbox", name="Type your remark here").fill(remarks)
-            except Exception:
-                try:
-                    self.page.locator("textarea").fill(remarks)
-                except Exception:
-                    pass
+        self.page.get_by_role(
+            "textbox", name="Type your remarks here"
+        ).fill(remarks)
 
-        # File upload - resolve common paths and fail clearly if not found
         if file_path:
-            tried = []
-            p = Path(file_path)
-            tried.append(str(p))
-            if not p.is_absolute():
-                # try repo uploads folder
-                p_uploads = Path.cwd() / "uploads" / file_path
-                tried.append(str(p_uploads))
-                # try repo root file
-                p_repo = Path.cwd() / file_path
-                tried.append(str(p_repo))
-                # choose first existing
-                candidates = [p, p_uploads, p_repo]
-            else:
-                candidates = [p]
-
-            resolved = None
-            for c in candidates:
-                c = Path(c)
-                if c.exists():
-                    resolved = c.resolve()
-                    break
-
-            if not resolved:
-                raise FileNotFoundError(f"Upload file not found. Tried: {tried}")
-
-            # use resolved absolute path for Playwright
-            try:
-                self.page.get_by_role("button", name="Browse Files").set_input_files(str(resolved))
-            except Exception:
-                self.page.locator("input[type=file]").set_input_files(str(resolved))
-            self.page.wait_for_timeout(200)
+            self.page.locator("input[type=file]").set_input_files(file_path)
 
     def save_product(self):
         self.page.get_by_role("button", name="Save").click()
- # ===============================
-    # PRJ_05 – ADD MILESTONE (NO TEST CHANGE)
-    # ===============================
-    def click_add_milestone_from_context(self):
-        btn = self.page.get_by_role("button", name="➕ Milestone")
-        btn.wait_for(state="visible", timeout=5000)
-        btn.click()
 
-        # 🔒 keep dialog open
+    # ===============================
+    # PRJ_05 – ADD MILESTONE
+    # ===============================
+    def expand_strategic_project_tracking(self):
+        node = self.page.get_by_role(
+            "treeitem",
+            name="Strategic Project Tracking System"
+        )
+        expect(node).to_be_visible(timeout=10000)
+        node.get_by_role("button").click()
+
+    def right_click_mission_project_tracking(self):
+        self.page.get_by_role(
+            "treeitem",
+            name="Mission Project Tracking"
+        ).locator("span").first.click(button="right")
+
+    def click_add_milestone_from_context(self):
+        self.page.get_by_role("button", name="➕ Milestone").click()
         self.page.get_by_role("dialog").wait_for(state="visible", timeout=5000)
 
     def fill_milestone_details(
         self,
-        milestone_name: str,
-        start_day: str,
-        end_day: str,
-        remarks: str,
-        file_path: str = None,
+        milestone_name,
+        start_day,
+        end_day,
+        remarks,
+        file_path=None,
     ):
         self.page.get_by_role(
             "textbox", name="Milestone Name"
         ).fill(milestone_name)
 
-        # Start date
-        self.page.get_by_role("combobox", name="Milestone Start Date").click()
-        calendar = self.page.locator("div.p-datepicker")
-        calendar.wait_for(state="visible", timeout=3000)
-        calendar.get_by_text(str(start_day), exact=True).click()
+        self.page.get_by_role(
+            "combobox", name="Milestone Start Date"
+        ).click()
+        self.page.get_by_text(start_day, exact=True).click()
 
-        # End date
-        self.page.get_by_role("combobox", name="Milestone End Date").click()
-        calendar.wait_for(state="visible", timeout=3000)
-        calendar.get_by_text(str(end_day), exact=True).click()
+        self.page.get_by_role(
+            "combobox", name="Milestone End Date"
+        ).click()
+        self.page.get_by_text(end_day, exact=True).click()
 
-        try:
-            self.page.get_by_role(
-                "textbox", name="Type your remarks here"
-            ).fill(remarks)
-        except Exception:
-            self.page.locator("textarea").fill(remarks)
+        self.page.get_by_role(
+            "textbox", name="Type your remarks here"
+        ).fill(remarks)
 
         if file_path:
-            p = Path(file_path)
-            if not p.exists():
-                p = Path.cwd() / file_path
-            if not p.exists():
-                raise FileNotFoundError(f"Upload file not found: {file_path}")
-
-            self.page.locator("input[type=file]").set_input_files(str(p.resolve()))
-
+         self.page.locator("input[type=file]").set_input_files(file_path)
     def save_milestone(self):
         self.page.get_by_role("button", name="Save").click()
 
 
+    # ===============================
+# PRJ_06 – ADD TASK FROM TREE
+# ===============================
 
+    def expand_strategic_project_tracking(self):
+     node = self.page.get_by_role(
+        "treeitem",
+        name="Strategic Project Tracking"
+    )
+     expect(node).to_be_visible(timeout=10000)
+     node.get_by_role("button").click()
+
+
+    def expand_mission_project_tracking(self):
+     node = self.page.get_by_role(
+        "treeitem",
+        name="Mission Project Tracking"
+    )
+     expect(node).to_be_visible(timeout=10000)
+     node.get_by_role("button").click()
+  
+
+
+    def right_click_phase_node(self, phase_name: str):
+     self.page.locator(
+        "span", has_text=phase_name
+    ).first.click(button="right")
+
+
+    def click_add_task_from_context(self):
+     self.page.get_by_role("button", name="➕ Task").click()
+     self.page.get_by_role("dialog").wait_for(
+        state="visible", timeout=5000
+    )
+
+
+    def fill_task_details(
+    self,
+    task_name: str,
+    priority: str,
+    complexity: str,
+    remarks: str,
+    file_path: str,
+):
+     self.page.get_by_role(
+        "textbox", name="Task Name"
+    ).fill(task_name)
+
+    # Priority
+     self.page.get_by_role(
+        "combobox", name="Task Priority"
+    ).click()
+     self.page.get_by_role(
+        "option", name=priority
+    ).click()
+
+    # Complexity
+     self.page.get_by_role(
+        "combobox", name="Task Complexity"
+    ).click()
+     self.page.get_by_label(
+        "Option List"
+    ).get_by_text(complexity, exact=True).click()
+
+     self.page.get_by_role(
+        "textbox", name="Type your remarks here"
+    ).fill(remarks)
+
+     if file_path:
+        self.page.locator(
+            "input[type=file]"
+        ).set_input_files(file_path)
+
+
+
+    def save_task(self):
+     self.page.get_by_role(
+        "button", name="Save"
+    ).click()
 
     # ===============================
-    # VERIFICATION
+    # PRJ_07 – ADD SUBTASK FROM TREE
     # ===============================
-    def verify_project_created(self, project_name):
-        self.page.wait_for_timeout(2000)
 
-        if self.toast_message.count() > 0:
-            expect(self.toast_message).to_be_visible(timeout=5000)
-            return
+    def expand_phase_node(self, phase_name: str):
+     node = self.page.get_by_role(
+        "treeitem",
+        name=phase_name
+    )
+     expect(node).to_be_visible(timeout=10000)
+     node.get_by_role("button").click()
 
-        self.link_projects.click()
-        project_row = self.page.get_by_role(
-            "row", name=lambda t: project_name.lower() in t.lower()
-        )
-        expect(project_row).to_be_visible(timeout=5000)
+
+    def right_click_task_node(self, task_name: str):
+     self.page.locator(
+        "span", has_text=task_name
+    ).first.click(button="right")
+
+
+    def click_add_subtask_from_context(self):
+     self.page.get_by_role("button", name="➕ Subtask").click()
+     self.page.get_by_role("dialog").wait_for(
+        state="visible", timeout=5000
+    )
+
+
+    def fill_subtask_details(
+    self,
+    subtask_name: str,
+    start_day: str,
+    end_day: str,
+    assign_to: str,
+    assignee: str,
+    shift: str,
+    priority: str,
+    complexity: str,
+    remarks: str,
+    file_path: str,
+):
+     self.page.get_by_role(
+        "textbox", name="Subtask Name"
+    ).fill(subtask_name)
+
+    # Start Date
+     self.page.get_by_role(
+        "combobox", name="Subtask Start Date"
+    ).click()
+     self.page.get_by_text(start_day, exact=True).click()
+
+    # End Date
+     self.page.get_by_role(
+        "combobox", name="Subtask End Date"
+    ).click()
+     self.page.get_by_text(end_day, exact=True).click()
+
+    # Assign To
+     self.page.get_by_role(
+        "combobox", name="Assign To"
+    ).click()
+     self.page.get_by_text(assign_to, exact=True).click()
+
+    # Assignee Name
+     self.page.get_by_role(
+        "combobox", name="Assignee Name"
+    ).click()
+     self.page.get_by_text(assignee, exact=True).click()
+
+    # Shift
+     self.page.get_by_role(
+        "combobox", name="Shift"
+    ).click()
+     self.page.get_by_text(shift, exact=True).click()
+
+    # Priority
+     self.page.get_by_role(
+        "combobox", name="Task Priority"
+    ).click()
+     self.page.get_by_text(priority, exact=True).click()
+
+    # Complexity (PrimeNG)
+     self.page.get_by_role(
+        "combobox", name="Task Complexity"
+    ).click()
+     self.page.get_by_label(
+        "Option List"
+    ).get_by_text(complexity, exact=True).click()
+
+    # Remarks
+     self.page.get_by_role(
+        "textbox", name="Type your remarks here"
+    ).fill(remarks)
+
+    # File upload (same logic as Product / Milestone / Task)
+     if file_path:
+        self.page.locator(
+            "input[type=file]"
+        ).set_input_files(file_path)
+
+
+    def save_subtask(self):
+     self.page.get_by_role(
+        "button", name="Save"
+    ).click()
+     
+    # ===============================
+# PRJ_08 – ADD WORKLOG FROM TREE
+# ===============================
+
+    def expand_task_node(self, task_name: str):
+     node = self.page.get_by_role(
+        "treeitem",
+        name=task_name
+    )
+     expect(node).to_be_visible(timeout=10000)
+     node.get_by_role("button").click()
+
+
+    def right_click_subtask_node(self, subtask_name: str):
+     self.page.locator(
+        "span", has_text=subtask_name
+    ).first.click(button="right")
+
+
+    def click_add_worklog_from_context(self):
+     self.page.get_by_role("button", name="➕ Worklog").click()
+     self.page.get_by_role("dialog").wait_for(
+        state="visible", timeout=5000
+    )
+
+
+    def fill_worklog_details(
+    self,
+    worklog_day: str,
+    time_spent: str,
+    work_description: str,
+    remarks: str,
+    file_path: str,
+):
+    # Worklog date
+     self.page.get_by_role(
+        "combobox", name="Select worklog date"
+    ).click()
+     self.page.get_by_text(worklog_day, exact=True).click()
+
+    # Time spent
+     self.page.get_by_placeholder(
+        "Time Spent (hrs)"
+    ).fill(time_spent)
+
+    # Work description
+     self.page.get_by_role(
+        "textbox", name="Work Description"
+    ).fill(work_description)
+
+    # Remarks
+     self.page.get_by_role(
+        "textbox", name="Type your remarks here"
+    ).fill(remarks)
+
+    # File upload (same logic as Product / Milestone / Task / Subtask)
+     if file_path:
+        self.page.locator(
+            "input[type=file]"
+        ).set_input_files(file_path)
+
+
+    def save_worklog(self):
+     self.page.get_by_role(
+        "button", name="Save"
+    ).click()
+
+
